@@ -1,0 +1,254 @@
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Employee Management</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f2f2f2;
+            margin: 0;
+            padding: 25px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: auto;
+            padding: 25px;
+            background: white;
+            border-radius: 8px;
+        }
+
+        label {
+            display: block;
+            margin-top: 12px;
+        }
+
+        input {
+            display: block;
+            box-sizing: border-box;
+            width: 100%;
+            padding: 10px;
+            margin-top: 5px;
+            border: 1px solid #999;
+            border-radius: 4px;
+            background: white;
+            color: black;
+            pointer-events: auto;
+            user-select: text;
+        }
+
+        button {
+            padding: 9px 14px;
+            margin-top: 15px;
+            margin-right: 5px;
+            cursor: pointer;
+        }
+
+        table {
+            width: 100%;
+            margin-top: 20px;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 10px;
+            border: 1px solid #ccc;
+            text-align: left;
+            overflow-wrap: anywhere;
+        }
+
+        th {
+            background: #e8e8e8;
+        }
+
+        .message {
+            margin-top: 12px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h2>Employee Management System</h2>
+
+        <form id="employeeForm">
+            <label for="empId">Employee ID</label>
+            <input type="number" id="empId" required>
+
+            <label for="empName">Employee Name</label>
+            <input type="text" id="empName" required>
+
+            <label for="empRole">Role</label>
+            <input type="text" id="empRole" required>
+
+            <label for="empSalary">Salary</label>
+            <input type="number" id="empSalary" min="0" required>
+
+            <button type="submit" id="submitBtn">Add Employee</button>
+            <button type="reset" id="clearBtn">Clear Form</button>
+        </form>
+
+        <p class="message" id="message" aria-live="polite"></p>
+
+        <h3>Employee List</h3>
+        <p>Total Employees: <span id="totalCount">0</span></p>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Role</th>
+                    <th>Salary</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+
+            <tbody id="employeeTable"></tbody>
+        </table>
+    </div>
+
+    <script>
+        const form = document.getElementById("employeeForm");
+        const table = document.getElementById("employeeTable");
+        const totalCount = document.getElementById("totalCount");
+        const submitBtn = document.getElementById("submitBtn");
+        const message = document.getElementById("message");
+
+        let employees = [];
+        let editId = null;
+
+        function displayEmployees() {
+            table.replaceChildren();
+
+            employees.forEach(function(employee) {
+                const row = document.createElement("tr");
+
+                [employee.id, employee.name,
+                 employee.role, employee.salary].forEach(function(value) {
+                    const cell = document.createElement("td");
+                    cell.textContent = value;
+                    row.appendChild(cell);
+                });
+
+                const actionCell = document.createElement("td");
+
+                const editButton = document.createElement("button");
+                editButton.type = "button";
+                editButton.textContent = "Edit";
+
+                editButton.addEventListener("click", function() {
+                    editEmployee(employee.id);
+                });
+
+                const deleteButton = document.createElement("button");
+                deleteButton.type = "button";
+                deleteButton.textContent = "Delete";
+
+                deleteButton.addEventListener("click", function() {
+                    deleteEmployee(employee.id);
+                });
+
+                actionCell.append(editButton, deleteButton);
+                row.appendChild(actionCell);
+                table.appendChild(row);
+            });
+
+            totalCount.textContent = employees.length;
+        }
+
+        form.addEventListener("submit", function(event) {
+            event.preventDefault();
+
+            const id = document.getElementById("empId").value.trim();
+            const name = document.getElementById("empName").value.trim();
+            const role = document.getElementById("empRole").value.trim();
+            const salary = document.getElementById("empSalary").value;
+
+            if (!id || !name || !role || salary === "") {
+                message.textContent = "Please fill in all fields.";
+                return;
+            }
+
+            const duplicate = employees.some(function(employee) {
+                return employee.id === id && employee.id !== editId;
+            });
+
+            if (duplicate) {
+                message.textContent = "This Employee ID already exists.";
+                return;
+            }
+
+            const employee = { id, name, role, salary };
+
+            if (editId === null) {
+                employees.push(employee);
+                message.textContent = "Employee added successfully.";
+            } else {
+                const index = employees.findIndex(function(item) {
+                    return item.id === editId;
+                });
+
+                if (index !== -1) {
+                    employees[index] = employee;
+                }
+
+                message.textContent = "Employee updated successfully.";
+            }
+
+            editId = null;
+            submitBtn.textContent = "Add Employee";
+            form.reset();
+            displayEmployees();
+        });
+
+        function editEmployee(id) {
+            const employee = employees.find(function(item) {
+                return item.id === id;
+            });
+
+            if (!employee) return;
+
+            document.getElementById("empId").value = employee.id;
+            document.getElementById("empName").value = employee.name;
+            document.getElementById("empRole").value = employee.role;
+            document.getElementById("empSalary").value = employee.salary;
+
+            editId = id;
+            submitBtn.textContent = "Update Employee";
+            message.textContent = "Edit the details and click Update Employee.";
+            document.getElementById("empName").focus();
+        }
+
+        function deleteEmployee(id) {
+            const confirmed = confirm("Do you want to delete this employee?");
+
+            if (!confirmed) return;
+
+            employees = employees.filter(function(employee) {
+                return employee.id !== id;
+            });
+
+            if (editId === id) {
+                editId = null;
+                form.reset();
+                submitBtn.textContent = "Add Employee";
+            }
+
+            displayEmployees();
+            message.textContent = "Employee deleted successfully.";
+        }
+
+        form.addEventListener("reset", function() {
+            editId = null;
+            submitBtn.textContent = "Add Employee";
+            message.textContent = "";
+        });
+    </script>
+</body>
+</html>
+```
